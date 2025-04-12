@@ -1,0 +1,8 @@
+
+project_id = "jtoerzaawzyvjsfewjxk"
+
+[functions.generate-response]
+verify_jwt = true
+
+[functions.get-api-key]
+verify_jwt = true
