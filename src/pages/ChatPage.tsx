@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Loader2, Send } from "lucide-react";
+import { MessageDisplay } from "@/components/MessageDisplay";
 
 type Agent = {
   id: string;
@@ -150,7 +150,6 @@ const ChatPage = () => {
   useEffect(() => {
     if (!conversation) return;
   
-    // Use a simpler channel name
     const channelName = `messages-${conversation.id}`;
     console.log(`Creating channel: ${channelName}`);
   
@@ -202,10 +201,10 @@ const ChatPage = () => {
     };
   }, [conversation]);
 
-  const sendMessage = async () => {
-    if (!input.trim() || !conversation || !user || isProcessing) return;
+  const sendMessage = async (messageContent?: string) => {
+    const contentToSend = messageContent || input.trim();
+    if (!contentToSend || !conversation || !user || isProcessing) return;
 
-    const userMessageContent = input.trim();
     setInput("");
     setIsProcessing(true);
 
@@ -213,7 +212,7 @@ const ChatPage = () => {
       // Optimistically add user message to UI immediately
       const optimisticUserMessage: Message = {
         id: `temp-${Date.now()}`,
-        content: userMessageContent,
+        content: contentToSend,
         sender_type: "user",
         created_at: new Date().toISOString()
       };
@@ -226,7 +225,7 @@ const ChatPage = () => {
         .insert({
           conversation_id: conversation.id,
           sender_type: "user",
-          content: userMessageContent
+          content: contentToSend
         })
         .select()
         .single();
@@ -290,13 +289,11 @@ const ChatPage = () => {
           // Use the Supabase function to generate a response
           const { data, error } = await supabase.functions.invoke("generate-response", {
             body: { 
-              prompt: `${systemPrompt}\n\nConversation history:\n${recentMessages}\n\nUser: ${userMessageContent}\n\nAssistant:`,
+              prompt: `${systemPrompt}\n\nConversation history:\n${recentMessages}\n\nUser: ${contentToSend}\n\nAssistant:`,
               model: "gemini-2.0-flash",
-              apiKey: apiKey // Pass API key if available in block config
+              apiKey: apiKey
             }
           });
-          
-          console.log("Response status:", data?.status || "No status");
           
           if (error) {
             console.error("Error from generate-response function:", error);
@@ -321,9 +318,6 @@ const ChatPage = () => {
         }
       }
 
-      // In the sendMessage function, modify the agent response handling:
-      
-      // After generating the response
       // Remove typing indicator
       setMessages(prevMessages => prevMessages.filter(msg => msg.id !== typingIndicatorId));
       
@@ -365,38 +359,85 @@ const ChatPage = () => {
         } else {
           console.log("Agent response saved with ID:", agentMessage.id);
           
-          // Directly add the agent message to the UI without waiting for real-time update
-          const typedAgentMessage: Message = {
-            id: agentMessage.id,
-            content: agentMessage.content,
-            sender_type: agentMessage.sender_type as "user" | "agent",
-            created_at: agentMessage.created_at
-          };
-          
-          setMessages(prevMessages => {
-            // Check if the message already exists in the state
-            const messageExists = prevMessages.some(msg => msg.id === typedAgentMessage.id);
-            if (messageExists) return prevMessages;
-            return [...prevMessages, typedAgentMessage];
-          });
+          // Replace the immediate message with the database message
+          setMessages(prevMessages => 
+            prevMessages.map(msg => 
+              msg.id === immediateAgentMessage.id
+                ? {
+                    id: agentMessage.id,
+                    content: agentMessage.content,
+                    sender_type: agentMessage.sender_type as "user" | "agent",
+                    created_at: agentMessage.created_at
+                  }
+                : msg
+            )
+          );
         }
       } catch (error: any) {
         console.error("Error in agent response handling:", error);
-        
-        // Show a fallback message in the UI even if there's an error
-        const fallbackMessage: Message = {
-          id: `fallback-${Date.now()}`,
-          content: response,
-          sender_type: "agent",
-          created_at: new Date().toISOString()
-        };
-        
-        setMessages(prevMessages => [...prevMessages, fallbackMessage]);
+        toast.error("Failed to save agent response");
       }
-
     } catch (error: any) {
       toast.error(error.message || "Failed to send message");
       console.error("Error in sendMessage:", error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleRegenerate = async (messageId: string) => {
+    if (!conversation || !user || isProcessing) return;
+
+    setIsProcessing(true);
+    try {
+      // Remove the message and all subsequent messages
+      setMessages(prevMessages => {
+        const messageIndex = prevMessages.findIndex(msg => msg.id === messageId);
+        return prevMessages.slice(0, messageIndex);
+      });
+
+      // Get the last user message before the one being regenerated
+      const lastUserMessage = messages.find(msg => 
+        msg.sender_type === "user" && 
+        new Date(msg.created_at) < new Date(messages.find(m => m.id === messageId)?.created_at || 0)
+      );
+
+      if (lastUserMessage) {
+        // Resend the last user message to regenerate the response
+        await sendMessage(lastUserMessage.content);
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to regenerate response");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleEditMessage = async (messageId: string, newContent: string) => {
+    if (!conversation || !user || isProcessing) return;
+
+    setIsProcessing(true);
+    try {
+      // Update the message in the database
+      const { error } = await supabase
+        .from("messages")
+        .update({ content: newContent })
+        .eq("id", messageId);
+
+      if (error) throw error;
+
+      // Update the message in the UI
+      setMessages(prevMessages =>
+        prevMessages.map(msg =>
+          msg.id === messageId
+            ? { ...msg, content: newContent }
+            : msg
+        )
+      );
+
+      toast.success("Message updated");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update message");
     } finally {
       setIsProcessing(false);
     }
@@ -431,23 +472,19 @@ const ChatPage = () => {
                   message.sender_type === "user" ? "justify-end" : "justify-start"
                 }`}
               >
-                <div
-                  className={`max-w-[80%] rounded-lg p-3 ${
-                    message.sender_type === "user"
-                      ? "bg-primary text-primary-foreground"
-                      : message.content === "..." 
-                        ? "bg-secondary animate-pulse" 
-                        : "bg-secondary"
-                  }`}
-                >
-                  {message.content}
-                </div>
+                <MessageDisplay
+                  content={message.content}
+                  isUser={message.sender_type === "user"}
+                  isTyping={message.content === "..."}
+                 
+                  onEdit={message.sender_type === "agent" ? (newContent) => handleEditMessage(message.id, newContent) : undefined}
+                />
               </div>
             ))
           )}
           <div ref={messagesEndRef} />
         </CardContent>
-        <div className="p-4 border-t">
+        <div className="p-8 border-t">
           <form
             onSubmit={(e) => {
               e.preventDefault();
