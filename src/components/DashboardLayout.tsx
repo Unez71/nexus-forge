@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { signOut } from "@/lib/auth";
 import { useAuth } from "@/contexts/AuthContext";
