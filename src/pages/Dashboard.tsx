@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Brain, Loader2, MessageCircle, Plus, Trash } from "lucide-react";
+import { Brain, Loader2, MessageCircle, Plus, Trash, Mic } from "lucide-react";
 
 type Agent = {
   id: string;
@@ -72,12 +72,20 @@ const Dashboard = () => {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900">My Agents</h1>
+        <div className="flex gap-3">
         <Link to="/create-agent">
           <Button className="flex items-center gap-2">
             <Plus className="w-4 h-4" />
             Create New Agent
           </Button>
         </Link>
+        <Link to="/voice-asistant">
+          <Button className="flex items-center gap-2">
+            <Mic className="w-4 h-4" />
+            Talk With Agent
+          </Button>
+        </Link>
+        </div>
       </div>
 
       {agents.length === 0 ? (
