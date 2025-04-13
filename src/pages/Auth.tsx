@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { ArrowLeft } from "lucide-react";
 
 const Auth = () => {
   const [email, setEmail] = useState("");
@@ -56,10 +57,20 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md p-2 relative">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="absolute top-2 left-2 p-2" 
+          onClick={() => navigate("/")}
+        >
+          <ArrowLeft className="h-4 w-4 mr-1" />
+          Back
+        </Button>
+        
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Agent Nexus Forge</CardTitle>
-          <CardDescription>Build and deploy AI agents with ease</CardDescription>
+          <CardTitle className="text-2xl">Nexus Forge</CardTitle>
+          <CardDescription>Don't have an account? Click on Sign up</CardDescription>
         </CardHeader>
         
         <Tabs defaultValue="signin" className="w-full">
@@ -132,7 +143,7 @@ const Auth = () => {
         </Tabs>
         
         <CardFooter className="flex justify-center text-sm text-gray-500">
-          Agent Nexus Forge &copy; {new Date().getFullYear()}
+          Nexus Forge &copy; {new Date().getFullYear()}
         </CardFooter>
       </Card>
     </div>

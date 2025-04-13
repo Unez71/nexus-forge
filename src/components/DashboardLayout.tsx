@@ -13,7 +13,7 @@ export function DashboardLayout() {
     try {
       await signOut();
       toast.success("Signed out successfully");
-      navigate("/auth");
+      navigate("/");
     } catch (error) {
       toast.error("Failed to sign out");
     }
@@ -29,7 +29,7 @@ export function DashboardLayout() {
             <div className="flex items-center">
               <Link to="/dashboard" className="flex items-center gap-2">
                 <Brain className="h-8 w-8 text-primary" />
-                <span className="text-xl font-bold text-gray-900">Agent Nexus Forge</span>
+                <span className="text-xl font-bold text-gray-900">Nexus Forge</span>
               </Link>
             </div>
             
@@ -68,7 +68,7 @@ export function DashboardLayout() {
                   {user?.email}
                 </div>
                 <Button 
-                  variant="outline"
+                  variant="destructive"
                   onClick={handleSignOut}
                 >
                   Sign out

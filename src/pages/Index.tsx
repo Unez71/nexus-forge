@@ -28,7 +28,7 @@ const Index = () => {
         <nav className="flex justify-between items-center mb-16">
           <div className="flex items-center gap-2">
             <Brain className="h-8 w-8 text-primary" />
-            <span className="text-xl font-bold">Agent Nexus Forge</span>
+            <span className="text-xl font-bold">Nexus Forge</span>
           </div>
           <div className="flex gap-4">
             <Link to="/auth">
@@ -124,10 +124,10 @@ const Index = () => {
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
               <Brain className="h-6 w-6 text-gray-500" />
-              <span className="font-medium">Agent Nexus Forge</span>
+              <span className="font-medium">Nexus Forge</span>
             </div>
             <div className="text-sm text-gray-500">
-              © {new Date().getFullYear()} Agent Nexus Forge. All rights reserved.
+              © {new Date().getFullYear()} Nexus Forge. All rights reserved.
             </div>
           </div>
         </footer>
