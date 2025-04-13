@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { signOut } from "@/lib/auth";
 import { useAuth } from "@/contexts/AuthContext";
@@ -47,6 +46,12 @@ export function DashboardLayout() {
                 className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100"
               >
                 Create Agent
+              </Link>
+              <Link 
+                to="/voice-asistant" 
+                className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100"
+              >
+                Conversation Agent
               </Link>
               <Link 
                 to="/conversations" 

@@ -264,6 +264,59 @@ const ChatPage = () => {
       if (promptBlock && promptBlock.config.prompt) {
         systemPrompt = promptBlock.config.prompt;
       }
+
+      // Add domain check using agent's name as primary reference
+      const agentName = agent?.name || "Assistant";
+      const agentDescription = agent?.description || "";
+
+      // Define agent domains and their expertise
+      const agentDomains = {
+        tuition: {
+          keywords: ["tuition", "teacher", "tutor", "academic", "education", "learn", "study", "school", "college", "university"],
+          expertise: "academic tutoring and education",
+          topics: `
+            Mathematics: algebra, geometry, calculus, statistics, trigonometry
+            Sciences: physics, chemistry, biology, environmental science
+            Languages: English, literature, grammar, writing, reading comprehension
+            Social Sciences: history, geography, economics, political science
+            Computer Science: programming, algorithms, data structures
+            Test Preparation: SAT, ACT, GRE, GMAT, competitive exams
+            Study Skills: time management, note-taking, exam strategies
+            Academic Writing: essays, research papers, thesis writing
+            Subject-specific Concepts: detailed explanations of academic topics
+            Problem Solving: step-by-step solutions, critical thinking
+            Learning Strategies: personalized study methods, concept understanding
+            Educational Resources: study materials, reference guides, practice problems
+          `,
+          redirect: "I'm a Tuition Teacher Assistant. I specialize in academic tutoring and education. I can help you with various subjects including mathematics, sciences, languages, social sciences, and more. Please ask me about any academic topic or learning strategy."
+        },
+        trading: {
+          keywords: ["trading", "stock", "market", "finance", "invest"],
+          expertise: "financial markets and trading",
+          topics: "stocks, indices, trading strategies, market analysis, technical analysis, fundamental analysis, portfolio management",
+          redirect: "I'm a Trading Assistant. I can only help with trading and financial market questions. Please ask me about stocks, trading strategies, or market analysis."
+        },
+        content: {
+          keywords: ["content", "write", "author", "blog", "copy"],
+          expertise: "content creation and writing",
+          topics: "content strategy, writing techniques, editing, proofreading, storytelling, copywriting, content planning",
+          redirect: "I'm a Content Creation Assistant. I can only help with content creation and writing questions. Please ask me about content strategy or writing techniques."
+        }
+      };
+
+      // Determine agent's domain based on name
+      let agentDomain = null;
+      for (const [domain, config] of Object.entries(agentDomains)) {
+        if (config.keywords.some(keyword => agentName.toLowerCase().includes(keyword))) {
+          agentDomain = config;
+          break;
+        }
+      }
+
+      // Construct domain-specific prompt
+      const domainCheckPrompt = agentDomain 
+        ? `${systemPrompt}\n\nYou are ${agentName}, a specialized AI assistant. ${agentDescription}\n\nIMPORTANT: You must ONLY respond to questions within your specific domain. For any other type of question, you must redirect the user.\n\nYour expertise is in ${agentDomain.expertise}.\nYou can answer questions about:\n${agentDomain.topics}\n\nWhen responding to questions:\n1. First, analyze if the question is within your domain\n2. If it's within your domain:\n   - Provide a detailed, helpful response\n   - Include relevant examples and explanations\n   - Use appropriate terminology\n3. If it's NOT within your domain:\n   - DO NOT attempt to answer it\n   - Use this exact response: "${agentDomain.redirect}"\n\nRemember: Your role is to help users within your specific domain. Never attempt to answer questions outside your domain. Always redirect them with the exact message provided above.`
+        : `${systemPrompt}\n\nYou are ${agentName}, a specialized AI assistant. ${agentDescription}\n\nYou can help with a wide range of topics and questions. Provide detailed, helpful responses to the best of your ability.`;
       
       // Construct context from previous messages
       const memoryBlock = blocks.find(block => block.type === "memory");
@@ -280,7 +333,7 @@ const ChatPage = () => {
       if (googleAIBlock) {
         try {
           console.log("Preparing to call generate-response function");
-          console.log("System prompt length:", systemPrompt.length);
+          console.log("System prompt length:", domainCheckPrompt.length);
           console.log("Recent messages count:", messages.length);
           
           // Add API key from block config if available
@@ -289,7 +342,7 @@ const ChatPage = () => {
           // Use the Supabase function to generate a response
           const { data, error } = await supabase.functions.invoke("generate-response", {
             body: { 
-              prompt: `${systemPrompt}\n\nConversation history:\n${recentMessages}\n\nUser: ${contentToSend}\n\nAssistant:`,
+              prompt: `${domainCheckPrompt}\n\nConversation history:\n${recentMessages}\n\nUser: ${contentToSend}\n\nAssistant:`,
               model: "gemini-2.0-flash",
               apiKey: apiKey
             }

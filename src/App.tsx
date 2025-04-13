@@ -15,6 +15,7 @@ import CreateAgent from "./pages/CreateAgent";
 import AgentEditor from "./pages/AgentEditor";
 import ChatPage from "./pages/ChatPage";
 import ConversationsPage from "./pages/ConversationsPage";
+import { VoiceCon } from "./pages/VoiceCon";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,7 @@ const App = () => (
                 <Route path="/agents/:id" element={<AgentEditor />} />
                 <Route path="/chat/:id" element={<ChatPage />} />
                 <Route path="/conversations" element={<ConversationsPage />} />
+                <Route path="/voice-asistant" element={<VoiceCon />} />
               </Route>
             </Route>
             
