@@ -1,8 +1,10 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useConversation } from '@11labs/react';
 import { Mic, Play, Pause } from 'lucide-react'
+import { AudioWaveform } from '@/components/AudioWaveform';
 
 export const VoiceCon = () => {
+  const [audioStream, setAudioStream] = useState<MediaStream>();
   const conversation = useConversation({
     onConnect: () => console.log('Connected'),
     onDisconnect: () => console.log('Disconnected'),
@@ -12,7 +14,8 @@ export const VoiceCon = () => {
 
   const startConversation = useCallback(async () => {
     try {
-      await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      setAudioStream(stream);
       await conversation.startSession({
         agentId: 'URC5UfVe3i1iHEN2SnsL',
       });
@@ -23,6 +26,8 @@ export const VoiceCon = () => {
 
   const stopConversation = useCallback(async () => {
     await conversation.endSession();
+    audioStream?.getTracks().forEach(track => track.stop());
+    setAudioStream(undefined);
   }, [conversation]);
 
   return (
@@ -65,6 +70,12 @@ export const VoiceCon = () => {
           </div>
         </div>
       </div>
+
+      {/* Waveform */}
+      <AudioWaveform
+        isRecording={conversation.status === 'connected'}
+        audioStream={audioStream}
+      />
 
       {/* Controls */}
       <div className="flex gap-4">
